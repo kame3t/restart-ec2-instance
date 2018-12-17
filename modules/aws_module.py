@@ -2,23 +2,21 @@ import json
 import os
 import boto3
 
-
 session = boto3.Session(
-    aws_access_key_id=os.environ['access_key'],
-    aws_secret_access_key=os.environ['secret_key'],
+    aws_access_key_id=os.environ['aws_access_key_id'],
+    aws_secret_access_key=os.environ['aws_secret_access_key'],
     region_name=os.environ['region_name']
 )
 
 ec2 = session.resource('ec2')
-elbv2 = session.resource('elbv2')
+elbv2 = session.client('elbv2')
 
 
 def select_target_group_id(tg_name):
     response = elbv2.describe_target_groups(
         Names=[tg_name]
     )
-    data = json.loads(response)
-    tg_arn = data['TargetGroupArn']
+    tg_arn = response['TargetGroups'][0]['TargetGroupArn']
     return tg_arn
 
 
@@ -26,8 +24,9 @@ def target_instances(tg_arn):
     response = elbv2.describe_target_health(
         TargetGroupArn=tg_arn
     )
-    data = json.loads(response)
-    instances = data['TargetHealthDescriptions']['Target']['Id']
+    instances = []
+    for instance in response['TargetHealthDescriptions']:
+        instances.append(instance['Target']['Id'])
     return instances
 
 
@@ -37,7 +36,7 @@ def detach_elb(tg_arn, instance_id):
         TargetGroupArn=tg_arn,
         Targets=[
             {
-                id: instance_id
+                'Id': instance_id
             }
         ]
     )
@@ -45,7 +44,7 @@ def detach_elb(tg_arn, instance_id):
         TargetGroupArn=tg_arn,
         Targets=[
             {
-                id: instance_id
+                'Id': instance_id
             }
         ]
     )
@@ -67,7 +66,7 @@ def attach_elb(tg_arn, instance_id):
         TargetGroupArn=tg_arn,
         Targets=[
             {
-                id: instance_id
+                'Id': instance_id
             }
         ]
     )
@@ -75,17 +74,19 @@ def attach_elb(tg_arn, instance_id):
         TargetGroupArn=tg_arn,
         Targets=[
             {
-                id: instance_id
+                'Id': instance_id
             }
         ]
     )
     return
 
 
-def main(tg_name):
+def main():
+    tg_name = 'kamei-test'
     tg_arn = select_target_group_id(tg_name)
     instances = target_instances(tg_arn)
     for instance_id in instances:
         detach_elb(tg_arn, instance_id)
         restart_ec2_instance(instance_id)
         attach_elb(tg_arn, instance_id)
+

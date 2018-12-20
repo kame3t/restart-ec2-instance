@@ -3,11 +3,7 @@ import json
 import os
 
 
-slack_webhook_url = os.environ['slack_webhook_url']
-slack_channel_name = os.environ['slack_channel_name']
-
-
-def send_slack_message(message):
+def send_slack_message(message, slack_webhook_url=os.environ['slack_webhook_url'], slack_channel_name = os.environ['slack_channel_name']):
     message_dict = {'text': message,
                     'username': u'rundeck script',
                     'icon_emoji': u':ghost:',

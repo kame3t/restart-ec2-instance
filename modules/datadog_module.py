@@ -2,14 +2,16 @@ from os import environ
 from datadog import initialize, api
 import time
 
-options = {
-    'api_key': environ['datadog_api_key'],
-    'app_key': environ['datadog_app_key']
-}
-initialize(**options)
+
+def connect_datadog(datadog_api_key=environ['datadog_api_key'], datadog_app_key=environ['datadog_app_key']):
+    options = {
+        'api_key': datadog_api_key,
+        'app_key': datadog_app_key
+    }
+    initialize(**options)
 
 
-def set_downtime(hostname, maintenance_time, tz):
+def get_downtime(hostname, maintenance_time=3600, tz='JST'):
     downtime_target = 'host:'+hostname
     start_ts = int(time.time())
     end_ts = start_ts + maintenance_time
@@ -25,8 +27,7 @@ def delete_downtime(downtime_id):
 
 
 def main():
-    hostname = "api1"
-    maintenance_time = 1 * 60 * 60
-    timezone = 'JST'
-    downtime_id = set_downtime(hostname, maintenance_time, timezone)
+    hostname = 'api1'
+    connect_datadog()
+    downtime_id = get_downtime(hostname)
     delete_downtime(downtime_id)

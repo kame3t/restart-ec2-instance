@@ -1,18 +1,18 @@
-import json
 import os
 import boto3
 
-session = boto3.Session(
-    aws_access_key_id=os.environ['aws_access_key_id'],
-    aws_secret_access_key=os.environ['aws_secret_access_key'],
-    region_name=os.environ['region_name']
-)
 
-ec2 = session.resource('ec2')
-elbv2 = session.client('elbv2')
+def connect_aws_api():
+    session = boto3.Session(
+        aws_access_key_id=os.environ['aws_access_key_id'],
+        aws_secret_access_key=os.environ['aws_secret_access_key'],
+        region_name=os.environ['region_name']
+    )
+    ec2 = session.resource('ec2')
+    elb2 = session.client('elbv2')
 
 
-def select_target_group_id(tg_name):
+def get_target_group_id(tg_name):
     response = elbv2.describe_target_groups(
         Names=[tg_name]
     )
@@ -20,7 +20,7 @@ def select_target_group_id(tg_name):
     return tg_arn
 
 
-def target_instances(tg_arn):
+def get_instances(tg_arn):
     response = elbv2.describe_target_health(
         TargetGroupArn=tg_arn
     )
@@ -83,8 +83,8 @@ def attach_elb(tg_arn, instance_id):
 
 def main():
     tg_name = 'kamei-test'
-    tg_arn = select_target_group_id(tg_name)
-    instances = target_instances(tg_arn)
+    tg_arn = get_target_group_id(tg_name)
+    instances = get_instances(tg_arn)
     for instance_id in instances:
         detach_elb(tg_arn, instance_id)
         restart_ec2_instance(instance_id)
